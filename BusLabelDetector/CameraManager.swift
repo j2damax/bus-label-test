@@ -136,10 +136,8 @@ class CameraManager: NSObject, ObservableObject {
            Set(consecutiveDetections).count == 1,
            now.timeIntervalSince(lastDetectionTime) > detectionCooldown {
             
-            Task { @MainActor in
-                self.detectedBusNumber = number
-                self.lastDetectionTime = now
-            }
+            self.detectedBusNumber = number
+            self.lastDetectionTime = now
         }
     }
 }
@@ -153,6 +151,7 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         
         // Create Vision request
         let request = VNRecognizeTextRequest { [weak self] request, error in
+            guard let self = self else { return }
             guard let observations = request.results as? [VNRecognizedTextObservation] else {
                 return
             }
@@ -166,9 +165,9 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
                 let recognizedText = topCandidate.string
                 
                 // Check if this looks like a bus number
-                if let busNumber = self?.processBusNumber(from: recognizedText) {
+                if let busNumber = self.processBusNumber(from: recognizedText) {
                     Task { @MainActor in
-                        self?.updateDetectedBusNumber(busNumber)
+                        self.updateDetectedBusNumber(busNumber)
                     }
                     return // Stop after first valid bus number found
                 }
